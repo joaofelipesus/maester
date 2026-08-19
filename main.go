@@ -5,14 +5,18 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 )
 
+// LATER: add the service external URL to ping and check if its alive while deploying it
 type config struct {
 	serverUserName string
 	serverIP       string
 	downloadLogs   bool
 }
 
+// NOTE: the local network IP address is used because the deployment is done using SSH commands which is
+// disabled on ngrok.
 func main() {
 	serverUserName := flag.String("user", "", "The user that will be used to access the server")
 	serverIP := flag.String("ip", "", "Ther server IP")
@@ -46,6 +50,41 @@ func validateRequiredConfigs(cfg config) error {
 	return nil
 }
 
-func run(cng config) {
-	fmt.Print("ping...")
+// 1. ping server
+// 2. check if SSH is available (TODO)
+// 3. run command
+func run(cfg config) {
+	if err := pingServer(cfg, realCommand); err != nil {
+		fmt.Printf("Failed to ping server, check if its up, and in the same network")
+		os.Exit(1)
+	}
+}
+
+// TODO: move to a external module
+
+// interface extracted to enable cover function pingServer and other functions that uses
+// direct command calls.
+type command interface {
+	CombinedOutput() ([]byte, error)
+}
+
+type commandFactory func(name string, args ...string) command
+
+func realCommand(name string, args ...string) command {
+	return exec.Command(name, args...)
+}
+
+func pingServer(cfg config, createComand commandFactory) error {
+	fmt.Printf("Start ping server on address %s\n", cfg.serverIP)
+
+	cmd := createComand("ping", "-c", "1", cfg.serverIP)
+
+	_, err := cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Server ping [SUCCESS]")
+
+	return nil
 }
