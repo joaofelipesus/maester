@@ -58,6 +58,11 @@ func run(cfg config) {
 		fmt.Printf("Failed to ping server, check if its up, and in the same network")
 		os.Exit(1)
 	}
+
+	if err := checkSSHAvailable(cfg, realCommand); err != nil {
+		fmt.Printf("Failed to ping server, check if its up, and in the same network")
+		os.Exit(1)
+	}
 }
 
 // TODO: move to a external module
@@ -79,12 +84,26 @@ func pingServer(cfg config, createComand commandFactory) error {
 
 	cmd := createComand("ping", "-c", "1", cfg.serverIP)
 
-	_, err := cmd.CombinedOutput()
-	if err != nil {
+	if _, err := cmd.CombinedOutput(); err != nil {
 		return err
 	}
 
 	fmt.Println("Server ping [SUCCESS]")
+
+	return nil
+}
+
+// The command nc (netcat) is used for scan ports
+func checkSSHAvailable(cfg config, createCommand commandFactory) error {
+	fmt.Printf("Start cherck SSH port on %s:22", cfg.serverIP)
+
+	cmd := createCommand("nc", "-zv", cfg.serverIP, "22")
+
+	if _, err := cmd.CombinedOutput(); err != nil {
+		return err
+	}
+
+	fmt.Println("SHH check [SUCCESS]")
 
 	return nil
 }
