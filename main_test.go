@@ -14,21 +14,27 @@ func TestValidateRequiredConfigs(t *testing.T) {
 	}{
 		{
 			name:          "NoMissingParams",
-			cfg:           config{serverUserName: "admin", serverIP: "192.168.1.11"},
+			cfg:           config{serverUserName: "admin", serverIP: "192.168.1.11", appPath: "/home/luwin/winterfel"},
 			expectedError: false,
 			expected:      nil,
 		},
 		{
 			name:          "MissingServerUserName",
-			cfg:           config{serverUserName: "", serverIP: "192.168.1.11"},
+			cfg:           config{serverUserName: "", serverIP: "192.168.1.11", appPath: "/home/luwin/winterfel"},
 			expectedError: true,
 			expected:      errors.New("user tag is required"),
 		},
 		{
 			name:          "MissingIP",
-			cfg:           config{serverUserName: "admin", serverIP: ""},
+			cfg:           config{serverUserName: "admin", serverIP: "", appPath: "/home/luwin/winterfel"},
 			expectedError: true,
-			expected:      errors.New("IP address ir required"),
+			expected:      errors.New("IP address is required"),
+		},
+		{
+			name:          "MissingAppPath",
+			cfg:           config{serverUserName: "admin", serverIP: "192.168.10.11", appPath: ""},
+			expectedError: true,
+			expected:      errors.New("App path is required"),
 		},
 	}
 
