@@ -2,6 +2,8 @@ package main
 
 import "fmt"
 
+// TODO: move functions to internal dir
+
 func PingServer(cfg config, createComand commandFactory) error {
 	fmt.Printf("Start ping server on address %s\n", cfg.serverIP)
 
