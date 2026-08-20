@@ -39,6 +39,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// TODO: add conditional when support new commands
 	outputFile, err := os.Create("logs/logs.txt")
 	if err != nil {
 		fmt.Println(err)
@@ -46,7 +47,7 @@ func main() {
 	}
 	defer outputFile.Close()
 
-	run(cfg, outputFile)
+	run(cfg, realCommand, outputFile)
 }
 
 // validates if any required tag is missing
@@ -69,18 +70,18 @@ func validateRequiredConfigs(cfg config) error {
 // 1. ping server
 // 2. check if SSH is available (TODO)
 // 3. run command
-func run(cfg config, outputFile io.Writer) {
-	if err := PingServer(cfg, realCommand); err != nil {
+func run(cfg config, createCommand commandFactory, outputFile io.Writer) {
+	if err := PingServer(cfg, createCommand); err != nil {
 		fmt.Printf("Failed to ping server, check if its up, and in the same network")
 		os.Exit(1)
 	}
 
-	if err := CheckSSHAvailable(cfg, realCommand); err != nil {
+	if err := CheckSSHAvailable(cfg, createCommand); err != nil {
 		fmt.Printf("Failed to check SSH server")
 		os.Exit(1)
 	}
 
-	if err := DownloadLogs(cfg, realCommand, outputFile); err != nil {
+	if err := DownloadLogs(cfg, createCommand, outputFile); err != nil {
 		fmt.Printf("Failed to download logs")
 		os.Exit(1)
 	}

@@ -5,15 +5,6 @@ import (
 	"testing"
 )
 
-type fakeCommand struct {
-	output []byte
-	err    error
-}
-
-func (command fakeCommand) CombinedOutput() ([]byte, error) {
-	return command.output, command.err
-}
-
 func TestPingServerSuccess(t *testing.T) {
 	cfg := config{serverIP: "192.168.1.11"}
 
