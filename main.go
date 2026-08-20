@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -38,7 +39,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	run(cfg)
+	outputFile, err := os.Create("logs/logs.txt")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer outputFile.Close()
+
+	run(cfg, outputFile)
 }
 
 // validates if any required tag is missing
@@ -61,7 +69,7 @@ func validateRequiredConfigs(cfg config) error {
 // 1. ping server
 // 2. check if SSH is available (TODO)
 // 3. run command
-func run(cfg config) {
+func run(cfg config, outputFile io.Writer) {
 	if err := PingServer(cfg, realCommand); err != nil {
 		fmt.Printf("Failed to ping server, check if its up, and in the same network")
 		os.Exit(1)
@@ -72,7 +80,7 @@ func run(cfg config) {
 		os.Exit(1)
 	}
 
-	if err := DownloadLogs(cfg, realCommand); err != nil {
+	if err := DownloadLogs(cfg, realCommand, outputFile); err != nil {
 		fmt.Printf("Failed to download logs")
 		os.Exit(1)
 	}
@@ -91,7 +99,7 @@ func realCommand(name string, args ...string) command {
 }
 
 // TODO: move functions to a module with the commands imple mentations
-func DownloadLogs(cfg config, createCommand commandFactory) error {
+func DownloadLogs(cfg config, createCommand commandFactory, output io.Writer) error {
 	fmt.Println("Start fetching logs")
 
 	serverUserAndIP := fmt.Sprintf("%s@%s", cfg.serverUserName, cfg.serverIP)
@@ -99,7 +107,7 @@ func DownloadLogs(cfg config, createCommand commandFactory) error {
 	splittedDockerCommand := strings.Split(dockerCommand, " ")
 	cmd := createCommand("ssh", splittedDockerCommand...)
 
-	output, err := cmd.CombinedOutput()
+	commandOutput, err := cmd.CombinedOutput()
 
 	if err != nil {
 		fmt.Println(err)
@@ -109,14 +117,7 @@ func DownloadLogs(cfg config, createCommand commandFactory) error {
 	fmt.Println("Fetching logs [SUCCESS]")
 	fmt.Println("Writing to a file")
 
-	file, err := os.Create("logs.txt")
-	if err != nil {
-		fmt.Println("Error while creating the log file")
-		return err
-	}
-	defer file.Close()
-
-	file.WriteString(string(output))
+	output.Write(commandOutput)
 	fmt.Println("Writing to a file [SUCCESS]")
 
 	return nil
