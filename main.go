@@ -9,6 +9,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // LATER: add the service external URL to ping and check if its alive while deploying it
@@ -19,19 +21,34 @@ type config struct {
 	downloadLogs   bool
 }
 
+// TODO: add README.md
 // NOTE: the local network IP address is used because the deployment is done using SSH commands which is
 // disabled on ngrok.
 func main() {
-	serverUserName := flag.String("user", "", "The user that will be used to access the server")
-	serverIP := flag.String("ip", "", "The server IP")
-	appPath := flag.String("app-path", "", "The absolute path of the app in the server")
-	downloadLogs := flag.Bool("doload-logs", false, "Download logs snapshot")
+	downloadLogs := flag.Bool("download-logs", false, "Download logs snapshot")
 	flag.Parse()
 
+	// TODO: document
+	configsFile, err := os.ReadFile("configs.yaml")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	var yamlConfigs map[string]string
+
+	err = yaml.Unmarshal(configsFile, &yamlConfigs)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	fmt.Print(yamlConfigs)
+
 	cfg := config{
-		serverUserName: *serverUserName,
-		serverIP:       *serverIP,
-		appPath:        *appPath,
+		serverUserName: yamlConfigs["serverUserName"],
+		serverIP:       yamlConfigs["serverIP"],
+		appPath:        yamlConfigs["appPath"],
 		downloadLogs:   *downloadLogs,
 	}
 
@@ -53,8 +70,10 @@ func main() {
 
 // validates if any required tag is missing
 func validateRequiredConfigs(cfg config) error {
+	fmt.Println(cfg)
+
 	if cfg.serverUserName == "" {
-		return errors.New("user tag is required")
+		return errors.New("user is required")
 	}
 
 	if cfg.serverIP == "" {

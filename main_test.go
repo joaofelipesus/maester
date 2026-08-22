@@ -24,7 +24,7 @@ func TestValidateRequiredConfigs(t *testing.T) {
 			name:          "MissingServerUserName",
 			cfg:           config{serverUserName: "", serverIP: "192.168.1.11", appPath: "/home/luwin/winterfel"},
 			expectedError: true,
-			expected:      errors.New("user tag is required"),
+			expected:      errors.New("user is required"),
 		},
 		{
 			name:          "MissingIP",
