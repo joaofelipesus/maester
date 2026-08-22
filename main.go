@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -118,7 +119,9 @@ func DownloadLogs(cfg config, createCommand commandFactory, output io.Writer) er
 	fmt.Println("Fetching logs [SUCCESS]")
 	fmt.Println("Writing to a file")
 
-	output.Write(commandOutput)
+	var buffer bytes.Buffer
+	buffer.Write(commandOutput)
+	removeUpCalls(&buffer, output)
 	fmt.Println("Writing to a file [SUCCESS]")
 
 	return nil
