@@ -18,7 +18,10 @@ type config struct {
 	serverUserName string
 	serverIP       string
 	appPath        string
+	stopCommand    string
+	startCommand   string
 	downloadLogs   bool
+	deploy         bool
 }
 
 // TODO: add README.md
@@ -26,6 +29,7 @@ type config struct {
 // disabled on ngrok.
 func main() {
 	downloadLogs := flag.Bool("download-logs", false, "Download logs snapshot")
+	deploy := flag.Bool("deploy", false, "Deploy a new version")
 	flag.Parse()
 
 	// TODO: document
@@ -49,7 +53,10 @@ func main() {
 		serverUserName: yamlConfigs["serverUserName"],
 		serverIP:       yamlConfigs["serverIP"],
 		appPath:        yamlConfigs["appPath"],
+		stopCommand:    yamlConfigs["stopCommand"],
+		startCommand:   yamlConfigs["startCommand"],
 		downloadLogs:   *downloadLogs,
+		deploy:         *deploy,
 	}
 
 	if err := validateRequiredConfigs(cfg); err != nil {
@@ -101,9 +108,19 @@ func run(cfg config, createCommand commandFactory, outputFile io.Writer) {
 		os.Exit(1)
 	}
 
-	if err := DownloadLogs(cfg, createCommand, outputFile); err != nil {
-		fmt.Printf("Failed to download logs")
-		os.Exit(1)
+	if cfg.downloadLogs {
+		if err := DownloadLogs(cfg, createCommand, outputFile); err != nil {
+			fmt.Printf("Failed to download logs")
+			os.Exit(1)
+		}
+	}
+
+	if cfg.deploy {
+		if err := DeployNewVersion(cfg, createCommand); err != nil {
+			fmt.Printf("Failed to deploy\n")
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	}
 }
 
@@ -119,7 +136,8 @@ func realCommand(name string, args ...string) command {
 	return exec.Command(name, args...)
 }
 
-// TODO: move functions to a module with the commands imple mentations
+// TODO: move functions to a module with the commands implementations
+// TODO: add coverage
 func DownloadLogs(cfg config, createCommand commandFactory, output io.Writer) error {
 	fmt.Println("Start fetching logs")
 
@@ -142,6 +160,50 @@ func DownloadLogs(cfg config, createCommand commandFactory, output io.Writer) er
 	buffer.Write(commandOutput)
 	removeUpCalls(&buffer, output)
 	fmt.Println("Writing to a file [SUCCESS]")
+
+	return nil
+}
+
+func commandMergedWithCd(cfg config, cmd string) []string {
+	mergedCommand := fmt.Sprintf("%s@%s cd %s && %s", cfg.serverUserName, cfg.serverIP, cfg.appPath, cmd)
+	return strings.Split(mergedCommand, " ")
+}
+
+// TODO: move functions to a module with the commands implementations
+// TODO: add coverage
+func DeployNewVersion(cfg config, createCommand commandFactory) error {
+	fmt.Println("Start deploy")
+	fmt.Println("Stop container")
+
+	// TODO: extract private function that merge and execute command, DeployNewVersion should only orchestrate
+	//       the steps
+	stopCommand := commandMergedWithCd(cfg, cfg.stopCommand)
+	cmd := createCommand("ssh", stopCommand...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(output))
+	fmt.Println("Stop container [SUCCESS]")
+
+	gitPullCommand := commandMergedWithCd(cfg, "git pull")
+	cmd = createCommand("ssh", gitPullCommand...)
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(output))
+	fmt.Println("Update repository [SUCCESS]")
+
+	fmt.Println("Start app")
+	buildAndStartCommand := commandMergedWithCd(cfg, cfg.startCommand)
+	cmd = createCommand("ssh", buildAndStartCommand...)
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(output))
+	fmt.Println("Start app [SUCCESS]")
 
 	return nil
 }

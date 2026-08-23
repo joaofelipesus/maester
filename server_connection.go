@@ -20,7 +20,7 @@ func PingServer(cfg config, createComand commandFactory) error {
 
 // The command nc (netcat) is used for scan ports
 func CheckSSHAvailable(cfg config, createCommand commandFactory) error {
-	fmt.Printf("Start cherck SSH port on %s:22", cfg.serverIP)
+	fmt.Printf("Start check SSH port on %s:22", cfg.serverIP)
 
 	cmd := createCommand("nc", "-zv", cfg.serverIP, "22")
 

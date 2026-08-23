@@ -1,3 +1,5 @@
 serverUserName: jon
 serverIP:       192.168.0.10
 appPath:        /home/jon/castle-black
+stopCommand:    docker compose down
+startCommand:   docker compose up -d --build
