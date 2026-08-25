@@ -1,4 +1,4 @@
-package main
+package logs
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ func TestRemoveUpCalls(t *testing.T) {
 	fmt.Fprintln(&input, "{\"path\":\"/up\"}")
 	fmt.Fprintln(&input, "line 2")
 
-	if err := removeUpCalls(&input, &output); err != nil {
+	if err := RemoveUpCalls(&input, &output); err != nil {
 		t.Fatal(err)
 	}
 

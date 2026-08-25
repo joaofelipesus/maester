@@ -1,4 +1,4 @@
-package main
+package logs
 
 import (
 	"bufio"
@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func removeUpCalls(reader io.Reader, writer io.Writer) error {
+func RemoveUpCalls(reader io.Reader, writer io.Writer) error {
 	scanner := bufio.NewScanner(reader)
 
 	for scanner.Scan() {

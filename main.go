@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"maester/internal/logs"
 	"os"
 	"os/exec"
 	"strings"
@@ -158,7 +159,7 @@ func DownloadLogs(cfg config, createCommand commandFactory, output io.Writer) er
 
 	var buffer bytes.Buffer
 	buffer.Write(commandOutput)
-	removeUpCalls(&buffer, output)
+	logs.RemoveUpCalls(&buffer, output)
 	fmt.Println("Writing to a file [SUCCESS]")
 
 	return nil
