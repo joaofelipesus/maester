@@ -15,7 +15,7 @@ import (
 )
 
 // LATER: add the service external URL to ping and check if its alive while deploying it
-type config struct {
+type Config struct {
 	serverUserName string
 	serverIP       string
 	appPath        string
@@ -50,7 +50,7 @@ func main() {
 
 	fmt.Print(yamlConfigs)
 
-	cfg := config{
+	cfg := Config{
 		serverUserName: yamlConfigs["serverUserName"],
 		serverIP:       yamlConfigs["serverIP"],
 		appPath:        yamlConfigs["appPath"],
@@ -77,7 +77,7 @@ func main() {
 }
 
 // validates if any required tag is missing
-func validateRequiredConfigs(cfg config) error {
+func validateRequiredConfigs(cfg Config) error {
 	fmt.Println(cfg)
 
 	if cfg.serverUserName == "" {
@@ -98,7 +98,7 @@ func validateRequiredConfigs(cfg config) error {
 // 1. ping server
 // 2. check if SSH is available (TODO)
 // 3. run command
-func run(cfg config, createCommand commandFactory, outputFile io.Writer) {
+func run(cfg Config, createCommand commandFactory, outputFile io.Writer) {
 	if err := PingServer(cfg, createCommand); err != nil {
 		fmt.Printf("Failed to ping server, check if its up, and in the same network")
 		os.Exit(1)
@@ -139,7 +139,7 @@ func realCommand(name string, args ...string) command {
 
 // TODO: move functions to a module with the commands implementations
 // TODO: add coverage
-func DownloadLogs(cfg config, createCommand commandFactory, output io.Writer) error {
+func DownloadLogs(cfg Config, createCommand commandFactory, output io.Writer) error {
 	fmt.Println("Start fetching logs")
 
 	serverUserAndIP := fmt.Sprintf("%s@%s", cfg.serverUserName, cfg.serverIP)
@@ -165,14 +165,14 @@ func DownloadLogs(cfg config, createCommand commandFactory, output io.Writer) er
 	return nil
 }
 
-func commandMergedWithCd(cfg config, cmd string) []string {
+func commandMergedWithCd(cfg Config, cmd string) []string {
 	mergedCommand := fmt.Sprintf("%s@%s cd %s && %s", cfg.serverUserName, cfg.serverIP, cfg.appPath, cmd)
 	return strings.Split(mergedCommand, " ")
 }
 
 // TODO: move functions to a module with the commands implementations
 // TODO: add coverage
-func DeployNewVersion(cfg config, createCommand commandFactory) error {
+func DeployNewVersion(cfg Config, createCommand commandFactory) error {
 	fmt.Println("Start deploy")
 	fmt.Println("Stop container")
 

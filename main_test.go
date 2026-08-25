@@ -10,31 +10,31 @@ import (
 func TestValidateRequiredConfigs(t *testing.T) {
 	testCases := []struct {
 		name          string
-		cfg           config
+		cfg           Config
 		expectedError bool
 		expected      error
 	}{
 		{
 			name:          "NoMissingParams",
-			cfg:           config{serverUserName: "admin", serverIP: "192.168.1.11", appPath: "/home/luwin/winterfel"},
+			cfg:           Config{serverUserName: "admin", serverIP: "192.168.1.11", appPath: "/home/luwin/winterfel"},
 			expectedError: false,
 			expected:      nil,
 		},
 		{
 			name:          "MissingServerUserName",
-			cfg:           config{serverUserName: "", serverIP: "192.168.1.11", appPath: "/home/luwin/winterfel"},
+			cfg:           Config{serverUserName: "", serverIP: "192.168.1.11", appPath: "/home/luwin/winterfel"},
 			expectedError: true,
 			expected:      errors.New("user is required"),
 		},
 		{
 			name:          "MissingIP",
-			cfg:           config{serverUserName: "admin", serverIP: "", appPath: "/home/luwin/winterfel"},
+			cfg:           Config{serverUserName: "admin", serverIP: "", appPath: "/home/luwin/winterfel"},
 			expectedError: true,
 			expected:      errors.New("IP address is required"),
 		},
 		{
 			name:          "MissingAppPath",
-			cfg:           config{serverUserName: "admin", serverIP: "192.168.10.11", appPath: ""},
+			cfg:           Config{serverUserName: "admin", serverIP: "192.168.10.11", appPath: ""},
 			expectedError: true,
 			expected:      errors.New("App path is required"),
 		},
@@ -68,7 +68,7 @@ type recordedCall struct {
 }
 
 func TestRunSuccess(t *testing.T) {
-	cfg := config{
+	cfg := Config{
 		serverUserName: "jon",
 		serverIP:       "192.168.10.11",
 		appPath:        "/user/castle-black",

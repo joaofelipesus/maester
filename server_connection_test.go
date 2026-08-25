@@ -6,7 +6,7 @@ import (
 )
 
 func TestPingServerSuccess(t *testing.T) {
-	cfg := config{serverIP: "192.168.1.11"}
+	cfg := Config{serverIP: "192.168.1.11"}
 
 	createCommand := func(name string, args ...string) command {
 		return fakeCommand{}
@@ -20,7 +20,7 @@ func TestPingServerSuccess(t *testing.T) {
 }
 
 func TestPingServerError(t *testing.T) {
-	cfg := config{serverIP: "192.168.1.11"}
+	cfg := Config{serverIP: "192.168.1.11"}
 	expectedErr := errors.New("ping failed")
 
 	createCommand := func(name string, args ...string) command {
@@ -35,7 +35,7 @@ func TestPingServerError(t *testing.T) {
 }
 
 func TestCheckSSHAvailableSuccess(t *testing.T) {
-	cfg := config{serverIP: "192.168.1.11"}
+	cfg := Config{serverIP: "192.168.1.11"}
 
 	createdCommand := func(name string, args ...string) command {
 		return fakeCommand{}
@@ -49,7 +49,7 @@ func TestCheckSSHAvailableSuccess(t *testing.T) {
 }
 
 func TestCheckSSHAvailableError(t *testing.T) {
-	cfg := config{serverIP: "192.168.1.11"}
+	cfg := Config{serverIP: "192.168.1.11"}
 	expectedError := errors.New("ssh fail")
 
 	createCommand := func(name string, args ...string) command {

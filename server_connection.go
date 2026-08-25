@@ -4,7 +4,7 @@ import "fmt"
 
 // TODO: move functions to internal dir
 
-func PingServer(cfg config, createComand commandFactory) error {
+func PingServer(cfg Config, createComand commandFactory) error {
 	fmt.Printf("Start ping server on address %s\n", cfg.serverIP)
 
 	cmd := createComand("ping", "-c", "1", cfg.serverIP)
@@ -19,7 +19,7 @@ func PingServer(cfg config, createComand commandFactory) error {
 }
 
 // The command nc (netcat) is used for scan ports
-func CheckSSHAvailable(cfg config, createCommand commandFactory) error {
+func CheckSSHAvailable(cfg Config, createCommand commandFactory) error {
 	fmt.Printf("Start check SSH port on %s:22", cfg.serverIP)
 
 	cmd := createCommand("nc", "-zv", cfg.serverIP, "22")
