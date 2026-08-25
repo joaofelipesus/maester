@@ -1,14 +1,24 @@
-package main
+package server
 
 import (
 	"errors"
+	"maester/internal"
 	"testing"
 )
 
-func TestPingServerSuccess(t *testing.T) {
-	cfg := Config{serverIP: "192.168.1.11"}
+type fakeCommand struct {
+	output []byte
+	err    error
+}
 
-	createCommand := func(name string, args ...string) command {
+func (command fakeCommand) CombinedOutput() ([]byte, error) {
+	return command.output, command.err
+}
+
+func TestPingServerSuccess(t *testing.T) {
+	cfg := internal.Config{ServerIP: "192.168.1.11"}
+
+	createCommand := func(name string, args ...string) internal.Command {
 		return fakeCommand{}
 	}
 
@@ -20,10 +30,10 @@ func TestPingServerSuccess(t *testing.T) {
 }
 
 func TestPingServerError(t *testing.T) {
-	cfg := Config{serverIP: "192.168.1.11"}
+	cfg := internal.Config{ServerIP: "192.168.1.11"}
 	expectedErr := errors.New("ping failed")
 
-	createCommand := func(name string, args ...string) command {
+	createCommand := func(name string, args ...string) internal.Command {
 		return fakeCommand{err: expectedErr}
 	}
 
@@ -35,9 +45,9 @@ func TestPingServerError(t *testing.T) {
 }
 
 func TestCheckSSHAvailableSuccess(t *testing.T) {
-	cfg := Config{serverIP: "192.168.1.11"}
+	cfg := internal.Config{ServerIP: "192.168.1.11"}
 
-	createdCommand := func(name string, args ...string) command {
+	createdCommand := func(name string, args ...string) internal.Command {
 		return fakeCommand{}
 	}
 
@@ -49,10 +59,10 @@ func TestCheckSSHAvailableSuccess(t *testing.T) {
 }
 
 func TestCheckSSHAvailableError(t *testing.T) {
-	cfg := Config{serverIP: "192.168.1.11"}
+	cfg := internal.Config{ServerIP: "192.168.1.11"}
 	expectedError := errors.New("ssh fail")
 
-	createCommand := func(name string, args ...string) command {
+	createCommand := func(name string, args ...string) internal.Command {
 		return fakeCommand{err: expectedError}
 	}
 

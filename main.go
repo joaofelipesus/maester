@@ -6,24 +6,14 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"maester/internal"
 	"maester/internal/logs"
+	"maester/internal/server"
 	"os"
-	"os/exec"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
-
-// LATER: add the service external URL to ping and check if its alive while deploying it
-type Config struct {
-	serverUserName string
-	serverIP       string
-	appPath        string
-	stopCommand    string
-	startCommand   string
-	downloadLogs   bool
-	deploy         bool
-}
 
 // TODO: add README.md
 // NOTE: the local network IP address is used because the deployment is done using SSH commands which is
@@ -50,14 +40,14 @@ func main() {
 
 	fmt.Print(yamlConfigs)
 
-	cfg := Config{
-		serverUserName: yamlConfigs["serverUserName"],
-		serverIP:       yamlConfigs["serverIP"],
-		appPath:        yamlConfigs["appPath"],
-		stopCommand:    yamlConfigs["stopCommand"],
-		startCommand:   yamlConfigs["startCommand"],
-		downloadLogs:   *downloadLogs,
-		deploy:         *deploy,
+	cfg := internal.Config{
+		ServerUserName: yamlConfigs["serverUserName"],
+		ServerIP:       yamlConfigs["serverIP"],
+		AppPath:        yamlConfigs["appPath"],
+		StopCommand:    yamlConfigs["stopCommand"],
+		StartCommand:   yamlConfigs["startCommand"],
+		DownloadLogs:   *downloadLogs,
+		Deploy:         *deploy,
 	}
 
 	if err := validateRequiredConfigs(cfg); err != nil {
@@ -73,22 +63,22 @@ func main() {
 	}
 	defer outputFile.Close()
 
-	run(cfg, realCommand, outputFile)
+	run(cfg, internal.RealCommand, outputFile)
 }
 
 // validates if any required tag is missing
-func validateRequiredConfigs(cfg Config) error {
+func validateRequiredConfigs(cfg internal.Config) error {
 	fmt.Println(cfg)
 
-	if cfg.serverUserName == "" {
+	if cfg.ServerUserName == "" {
 		return errors.New("user is required")
 	}
 
-	if cfg.serverIP == "" {
+	if cfg.ServerIP == "" {
 		return errors.New("IP address is required")
 	}
 
-	if cfg.appPath == "" {
+	if cfg.AppPath == "" {
 		return errors.New("App path is required")
 	}
 
@@ -98,25 +88,25 @@ func validateRequiredConfigs(cfg Config) error {
 // 1. ping server
 // 2. check if SSH is available (TODO)
 // 3. run command
-func run(cfg Config, createCommand commandFactory, outputFile io.Writer) {
-	if err := PingServer(cfg, createCommand); err != nil {
+func run(cfg internal.Config, createCommand internal.CommandFactory, outputFile io.Writer) {
+	if err := server.PingServer(cfg, createCommand); err != nil {
 		fmt.Printf("Failed to ping server, check if its up, and in the same network")
 		os.Exit(1)
 	}
 
-	if err := CheckSSHAvailable(cfg, createCommand); err != nil {
+	if err := server.CheckSSHAvailable(cfg, createCommand); err != nil {
 		fmt.Printf("Failed to check SSH server")
 		os.Exit(1)
 	}
 
-	if cfg.downloadLogs {
+	if cfg.DownloadLogs {
 		if err := DownloadLogs(cfg, createCommand, outputFile); err != nil {
 			fmt.Printf("Failed to download logs")
 			os.Exit(1)
 		}
 	}
 
-	if cfg.deploy {
+	if cfg.Deploy {
 		if err := DeployNewVersion(cfg, createCommand); err != nil {
 			fmt.Printf("Failed to deploy\n")
 			fmt.Println(err)
@@ -125,25 +115,25 @@ func run(cfg Config, createCommand commandFactory, outputFile io.Writer) {
 	}
 }
 
-// interface extracted to enable cover function pingServer and other functions that uses
-// direct command calls.
-type command interface {
-	CombinedOutput() ([]byte, error)
-}
+// // interface extracted to enable cover function pingServer and other functions that uses
+// // direct command calls.
+// type command interface {
+// 	CombinedOutput() ([]byte, error)
+// }
 
-type commandFactory func(name string, args ...string) command
+// type CommandFactory func(name string, args ...string) command
 
-func realCommand(name string, args ...string) command {
-	return exec.Command(name, args...)
-}
+// func realCommand(name string, args ...string) command {
+// 	return exec.Command(name, args...)
+// }
 
 // TODO: move functions to a module with the commands implementations
 // TODO: add coverage
-func DownloadLogs(cfg Config, createCommand commandFactory, output io.Writer) error {
+func DownloadLogs(cfg internal.Config, createCommand internal.CommandFactory, output io.Writer) error {
 	fmt.Println("Start fetching logs")
 
-	serverUserAndIP := fmt.Sprintf("%s@%s", cfg.serverUserName, cfg.serverIP)
-	dockerCommand := fmt.Sprintf("%s cd %s && docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --since 2h app", serverUserAndIP, cfg.appPath)
+	serverUserAndIP := fmt.Sprintf("%s@%s", cfg.ServerUserName, cfg.ServerIP)
+	dockerCommand := fmt.Sprintf("%s cd %s && docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --since 2h app", serverUserAndIP, cfg.AppPath)
 	splittedDockerCommand := strings.Split(dockerCommand, " ")
 	cmd := createCommand("ssh", splittedDockerCommand...)
 
@@ -165,20 +155,20 @@ func DownloadLogs(cfg Config, createCommand commandFactory, output io.Writer) er
 	return nil
 }
 
-func commandMergedWithCd(cfg Config, cmd string) []string {
-	mergedCommand := fmt.Sprintf("%s@%s cd %s && %s", cfg.serverUserName, cfg.serverIP, cfg.appPath, cmd)
+func commandMergedWithCd(cfg internal.Config, cmd string) []string {
+	mergedCommand := fmt.Sprintf("%s@%s cd %s && %s", cfg.ServerUserName, cfg.ServerIP, cfg.AppPath, cmd)
 	return strings.Split(mergedCommand, " ")
 }
 
 // TODO: move functions to a module with the commands implementations
 // TODO: add coverage
-func DeployNewVersion(cfg Config, createCommand commandFactory) error {
+func DeployNewVersion(cfg internal.Config, createCommand internal.CommandFactory) error {
 	fmt.Println("Start deploy")
 	fmt.Println("Stop container")
 
 	// TODO: extract private function that merge and execute command, DeployNewVersion should only orchestrate
 	//       the steps
-	stopCommand := commandMergedWithCd(cfg, cfg.stopCommand)
+	stopCommand := commandMergedWithCd(cfg, cfg.StopCommand)
 	cmd := createCommand("ssh", stopCommand...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -197,7 +187,7 @@ func DeployNewVersion(cfg Config, createCommand commandFactory) error {
 	fmt.Println("Update repository [SUCCESS]")
 
 	fmt.Println("Start app")
-	buildAndStartCommand := commandMergedWithCd(cfg, cfg.startCommand)
+	buildAndStartCommand := commandMergedWithCd(cfg, cfg.StartCommand)
 	cmd = createCommand("ssh", buildAndStartCommand...)
 	output, err = cmd.CombinedOutput()
 	if err != nil {

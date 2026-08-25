@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"maester/internal"
 	"reflect"
 	"testing"
 )
@@ -10,31 +11,31 @@ import (
 func TestValidateRequiredConfigs(t *testing.T) {
 	testCases := []struct {
 		name          string
-		cfg           Config
+		cfg           internal.Config
 		expectedError bool
 		expected      error
 	}{
 		{
 			name:          "NoMissingParams",
-			cfg:           Config{serverUserName: "admin", serverIP: "192.168.1.11", appPath: "/home/luwin/winterfel"},
+			cfg:           internal.Config{ServerUserName: "admin", ServerIP: "192.168.1.11", AppPath: "/home/luwin/winterfel"},
 			expectedError: false,
 			expected:      nil,
 		},
 		{
 			name:          "MissingServerUserName",
-			cfg:           Config{serverUserName: "", serverIP: "192.168.1.11", appPath: "/home/luwin/winterfel"},
+			cfg:           internal.Config{ServerUserName: "", ServerIP: "192.168.1.11", AppPath: "/home/luwin/winterfel"},
 			expectedError: true,
 			expected:      errors.New("user is required"),
 		},
 		{
 			name:          "MissingIP",
-			cfg:           Config{serverUserName: "admin", serverIP: "", appPath: "/home/luwin/winterfel"},
+			cfg:           internal.Config{ServerUserName: "admin", ServerIP: "", AppPath: "/home/luwin/winterfel"},
 			expectedError: true,
 			expected:      errors.New("IP address is required"),
 		},
 		{
 			name:          "MissingAppPath",
-			cfg:           Config{serverUserName: "admin", serverIP: "192.168.10.11", appPath: ""},
+			cfg:           internal.Config{ServerUserName: "admin", ServerIP: "192.168.10.11", AppPath: ""},
 			expectedError: true,
 			expected:      errors.New("App path is required"),
 		},
@@ -68,11 +69,11 @@ type recordedCall struct {
 }
 
 func TestRunSuccess(t *testing.T) {
-	cfg := Config{
-		serverUserName: "jon",
-		serverIP:       "192.168.10.11",
-		appPath:        "/user/castle-black",
-		downloadLogs:   true,
+	cfg := internal.Config{
+		ServerUserName: "jon",
+		ServerIP:       "192.168.10.11",
+		AppPath:        "/user/castle-black",
+		DownloadLogs:   true,
 	}
 
 	expectedLogs := []byte("app | winter is coming\n")
@@ -80,7 +81,7 @@ func TestRunSuccess(t *testing.T) {
 	// so we are using the injection of an interface to "mock" the execution of commands
 	var calls []recordedCall
 
-	createCommand := func(name string, args ...string) command {
+	createCommand := func(name string, args ...string) internal.Command {
 		calls = append(calls, recordedCall{name: name, args: args})
 
 		if name == "ssh" {
